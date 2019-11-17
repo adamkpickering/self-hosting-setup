@@ -1,0 +1,56 @@
+version: "3.3"
+
+networks:
+  personal-site:
+    driver: bridge
+
+volumes:
+  cert-volume:
+
+services:
+
+  traefik:
+    image: "traefik:v2.0.0-rc3"
+    container_name: "traefik"
+    command:
+      #- "--log.level=DEBUG"
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--certificatesresolvers.mydnschallenge.acme.dnschallenge=true"
+      - "--certificatesresolvers.mydnschallenge.acme.dnschallenge.provider=route53"
+      # used for testing/debugging
+      #- "--certificatesresolvers.mydnschallenge.acme.caserver=https://acme-staging-v02.api.letsencrypt.org/directory"
+      - "--certificatesresolvers.mydnschallenge.acme.email=adamkpickering@gmail.com"
+      - "--certificatesresolvers.mydnschallenge.acme.storage=/letsencrypt/acme.json"
+    networks:
+      - personal-site
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8080:8080"
+    environment:
+      - "AWS_ACCESS_KEY_ID="
+      - "AWS_SECRET_ACCESS_KEY="
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "cert-volume:/letsencrypt"
+
+  whoami:
+    image: "www"
+    container_name: "www"
+    networks:
+      - personal-site
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.www.rule=Host(`www.adampickering.ca`)||Host(`adampickering.ca`)"
+      - "traefik.http.routers.www.entrypoints=web"
+      - "traefik.http.routers.www.middlewares=switcheroo"
+      - "traefik.http.routers.wwwsecure.rule=Host(`www.adampickering.ca`)||Host(`adampickering.ca`)"
+      - "traefik.http.routers.wwwsecure.middlewares=switcheroo"
+      - "traefik.http.routers.wwwsecure.entrypoints=websecure"
+      - "traefik.http.routers.wwwsecure.tls.certresolver=mydnschallenge"
+      - "traefik.http.middlewares.switcheroo.redirectregex.regex=^https?://(www.)?adampickering.ca/(.*)"
+      - "traefik.http.middlewares.switcheroo.redirectregex.replacement=https://www.adampickering.ca/$${2}"
