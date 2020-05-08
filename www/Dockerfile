@@ -1,4 +1,4 @@
 FROM busybox:latest
-COPY site /srv
+COPY website/public /srv
 EXPOSE 80
 CMD ["/bin/httpd", "-f", "-h", "/srv"]

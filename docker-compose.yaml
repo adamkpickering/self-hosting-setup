@@ -15,6 +15,7 @@ services:
     command:
       #- "--log.level=DEBUG"
       - "--api.insecure=true"
+      - "--global.sendAnonymousUsage=false"
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
       - "--entrypoints.web.address=:80"
@@ -38,8 +39,8 @@ services:
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
       - "cert-volume:/letsencrypt"
 
-  whoami:
-    image: "www"
+  www:
+    image: "www:latest"
     container_name: "www"
     networks:
       - personal-site
